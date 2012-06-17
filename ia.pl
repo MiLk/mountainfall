@@ -318,7 +318,7 @@ setourner((_,_,'W'),(_,_,'E')).
 setourner((_,_,'E'),(_,_,'W')).
 
 reagir1(L,[],[]).
-reagir1(L,[(Depart,Arrivee,O)|Q],[(Depart,Arrivee,O)|C]) :- member((D,A,Orien),L),setourner((D,A,Orien),(Depart,Arrivee,O)),poussee_impossible(poussee_possible(P,(D,A,Orien))),reagir1(L,Q,C),!.
+reagir1(L,[(Depart,Arrivee,O)|Q],[(Depart,Arrivee,O)|C]) :- member((D,A,Orien),L),setourner((D,A,Orien),(Depart,Arrivee,O)),\+poussee_possible(P,(D,A,Orien)),reagir1(L,Q,C),!.
 reagir1(L,[(Depart,Arrivee,O)|Q],C) :- reagir1(L,Q,C).
 
 
@@ -349,8 +349,14 @@ comptePoussee2([],[_,R,_,'R'],0).
 comptePoussee2([(D,A,O)|L],[_,R,_,'R'],Nb):- D\=A,member(D,R),comptePoussee2(L,[_,R,_,'R'],Nb2), Nb is Nb2+1,!.
 comptePoussee2([(D,A,O)|L],[_,R,_,'R'],Nb):- comptePoussee2(L,[_,R,_,'R'],Nb).
 
-meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,L2),reagir1(P,L2,T),tete(C,T).
-meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,L2),reagir2(L2,C).
+% gain immediat
+meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,[C|_]).
+% reagir 1
+meilleur_coup([E,R,M,'R'],C) :- coups_possibles([E,R,M,'E'],L), coups_gagnants(P,L,L2),reagir1(L2,CG)
+meilleur_coup([E,R,M,'E'],C) :- coups_possibles([E,R,M,'R'],L), coups_gagnants(P,L,L2),reagir1(L2,CG)
+% reagir 2
+meilleur_coup([E,R,M,'R'],C) :- coups_possibles([E,R,M,'E'],L), coups_gagnants(P,L,[C|_]).
+meilleur_coup([E,R,M,'E'],C) :- coups_possibles([E,R,M,'R'],L), coups_gagnants(P,L,[C|_]).
 
 
 jouer3 :-plateauDepart(P),jouer_coup3(P,_,_).
