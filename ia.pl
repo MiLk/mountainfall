@@ -16,7 +16,7 @@ plateauDepart(Plateau) :- Plateau = [[(0,0),(0,0),(0,0),(0,0),(0,0)],[(0,0),(0,0
 
 
 %plateauTest(Plateau) :- Plateau = [[(13,'N'),(33,'S'),(43,'N'),(0,0),(0,0)],[(0,0),(0,0),(0,0),(0,0),(0,0)],[23,42,34],'E'].
-plateauTest(Plateau) :- Plateau = [[(11,'N'),(21,'S'),(32,'W'),(14,'S'),(12,'W')],[(55,'W'),(23,'S'),(31,'E'),(24,'N'),(42,'N')],[33,52,34],'R'].
+plateauTest(Plateau) :- Plateau = [[(11,'N'),(21,'S'),(32,'W'),(14,'S'),(12,'W')],[(55,'W'),(23,'S'),(31,'E'),(22,'N'),(42,'N')],[33,52,34],'R'].
 
 
 affiche_direction(Dir,O) :- O = Dir, Dir = 'W', !, write(' < ').
@@ -308,19 +308,14 @@ montagnes([_,_,[M|Q],_],[M|L]) :- isBord(M),montagnes([_,_,Q,_],L).
 
 
 coups_gagnants(P,[],[]):-!.
-coups_gagnants(P,[(Depart,Arrivee,_)|Q],[(Depart,Arrivee,_)|L]) :- Depart\=0,isMontagnes(P,Arrivee),isBord(Arrivee),coups_gagnants(P,Q,L), !.
-coups_gagnants(P,[_|Q],[_|L]):- coups_gagnants(P,Q,L).
-
-
-poussee_impossible(poussee_possible(P,(Depart,Arrivee,O))) :- poussee_possible(P,(Depart,Arrivee,O)),!,fail.
-poussee_impossible(_).  
+coups_gagnants(P,[(Depart,Arrivee,O)|Q],[(Depart,Arrivee,O)|L]) :- isMontagne(P,Arrivee),isBord(Arrivee),coups_gagnants(P,Q,L), !.
+coups_gagnants(P,[_|Q],L):- coups_gagnants(P,Q,L).
 
 
 setourner((_,_,'N'),(_,_,'S')).
 setourner((_,_,'S'),(_,_,'N')).
 setourner((_,_,'W'),(_,_,'E')).
 setourner((_,_,'E'),(_,_,'W')).
-
 
 reagir1(L,[],[]).
 reagir1(L,[(Depart,Arrivee,O)|Q],[(Depart,Arrivee,O)|C]) :- member((D,A,Orien),L),setourner((D,A,Orien),(Depart,Arrivee,O)),poussee_impossible(poussee_possible(P,(D,A,Orien))),reagir1(L,Q,C),!.
@@ -335,32 +330,6 @@ reagir2(L,T) :-tete(T,L).
 
 succ(X,Y,[(X,Y,_)|Q]).
 succ(X,Y,[_|Q]) :- succ(X,Y,Q).
-
-
-% tous les deplacements possibles
- 
-graphe :- [(51,52,_),(51,41,_),(52,51,_),(52,42,_),(52,53,_),(53,54,_),(53,52,_),(53,43,_),(54,55,_),(54,43,_),(54,44),
-(55,54,_),(55,45,_),(41,51,_),(41,42,_),(41,31,_),(42,41,_),(42,43,_),(42,32,_),(42,52,_),(43,42,_),(43,44,_),(43,53,_),(43,33,_),(44,43,_),(44,45,_),(44,34,_),(44,55,_),(45,44,_),(45,35,_),(45,55,_),(31,32,_),(31,41,_),(31,21,_),(32,33,_),(32,31,_),(32,22,_),(32,42,_),(33,32,_),(33,34,_),(33,23,_),(33,43,_),(34,33,_),(34,35),(34,44,_),(34,24,_),(35,45,_),(35,25,_),(35,45,_),(21,31,_),(21,11,_),(21,22,_),(22,21,_),(22,23,_),(22,12,_),(22,32,_),(23,22,_),(23,24,_),(23,33,_),(23,24,_),(24,24,_),(24,25,_),(24,14,_),(24,34,_),(25,24,_),(25,35,_),(25,15,_),(11,12,_),(11,21,_),(12,13,_),(12,22,_),(12,11,_),(13,14,_),(13,12,_),(13,23,_),(14,13,_),(14,24,_),(14,15,_),(15,14,_),(15,25,_)].
-
-
-
-
-chemin(X,Y,graphe,[X,Y]) :- succ(X,Y,graphe).
- chemin(X,Y,graphe,[X|C]) :- enlever((X,Z),graphe,P2),chemin(Z,Y,P2,C),!.
-
-
-optimum1(P,[],[]).
-optimum1(P,[(Depart,Arrivee,O)|L],[(Depart,Arrivee,O)|C]) :- chemin(Depart,Arrivee,graphe(P),L2),isMontagnes(P,Arrivee),isBord(Arrivee),optimum1(P,L,C),!.
-optimum1(P,[_|L],C) :- optimum1(P,L,C).
-
-
-optimum3(P,[],[]).
-optimum3(P,[(Depart,Arrivee,O)|L],[(Depart,Arrivee,O)|C]) :- chemin(Depart,Arrivee,graphe(P),L2),isMontagnes(P,Arrivee),optimum3(P,L,C),!.
-optimum3(P,[_|L],C) :- optimum3(P,L,C).
-
-
-mimimum(P,Q,P) :- P =< Q.
-mimimum(P,Q,Q) :- Q =< P.
 
 
 maximum(P,Q,Q) :- Q > P.
@@ -379,14 +348,7 @@ comptePoussee1([(D,A,O)|L],[E,_,_,'E'],Nb):- comptePoussee1(L,[E,_,_,'E'],Nb).
 comptePoussee2([],[_,R,_,'R'],0).
 comptePoussee2([(D,A,O)|L],[_,R,_,'R'],Nb):- D\=A,member(D,R),comptePoussee2(L,[_,R,_,'R'],Nb2), Nb is Nb2+1,!.
 comptePoussee2([(D,A,O)|L],[_,R,_,'R'],Nb):- comptePoussee2(L,[_,R,_,'R'],Nb).
-/*
-optimum2([E,R,M,_],[],[]).
-%optimum2([E,R,M,_],[(D,A,O)|L],[(D,A,O)|T]) :- comptePoussee1((D,A,O),[],Nb1),comptePoussee2(,Nb2), maximum(Nb1,Nb2,Nb),optimum2
-%([E,R,M,_],L,T).
-%optimum2([E,R,M,_],[D,A,O|L],T):- optimum2([E,R,M,_],L,T).
-*/
-meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,[]),optimum1(P,L,T),tete(C,T).
-meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,[]),optimum3(P,L,T),tete(C,T).
+
 meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,L2),reagir1(P,L2,T),tete(C,T).
 meilleur_coup(P,C) :- coups_possibles(P,L), coups_gagnants(P,L,L2),reagir2(L2,C).
 
