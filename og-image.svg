@@ -48,8 +48,8 @@
     <text x="255" y="56" font-size="32" text-anchor="middle" dominant-baseline="central">🦏</text>
   </g>
   <!-- Title -->
-  <text x="600" y="520" font-family="system-ui, sans-serif" font-size="72" font-weight="bold" fill="#eee" text-anchor="middle">SIAM</text>
-  <text x="600" y="570" font-family="system-ui, sans-serif" font-size="24" fill="#aaa" text-anchor="middle">Elephants vs Rhinoceros — Strategy Board Game</text>
+  <text x="600" y="520" font-family="system-ui, sans-serif" font-size="64" font-weight="bold" fill="#eee" text-anchor="middle">Mountainfall</text>
+  <text x="600" y="570" font-family="system-ui, sans-serif" font-size="24" fill="#aaa" text-anchor="middle">Elephants vs Rhinoceros — Push the Mountains</text>
   <!-- Side decorations -->
   <text x="200" y="270" font-size="64" text-anchor="middle" dominant-baseline="central">🐘</text>
   <text x="1000" y="270" font-size="64" text-anchor="middle" dominant-baseline="central">🦏</text>

@@ -1,6 +1,8 @@
-# SIAM — Elephants vs Rhinoceros
+# Mountainfall
 
-A browser-based implementation of the SIAM board game. Two players take turns placing and moving their animals on a 5x5 board, trying to push one of three mountains off the edge.
+> Elephants vs Rhinoceros — Push the Mountains
+
+A browser-based implementation of the [SIAM](https://boardgamegeek.com/boardgame/32077/siam) board game. Two players take turns placing and moving their animals on a 5x5 board, trying to push one of three mountains off the edge.
 
 ## Play
 
