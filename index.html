@@ -483,11 +483,12 @@ function parseMoveList(prologList) {
   const moves = [];
   if (!prologList) return moves;
   for (const item of prologList) {
-    const outer = tupleArgs(item);
-    const inner = tupleArgs(outer[0]);
-    const depart = inner[0];
-    const arrivee = inner[1];
-    const dir = outer[1];
+    // (D, A, O) is right-associated: ','(D, ','(A, O))
+    const outer = tupleArgs(item);    // [D, ','(A, O)]
+    const depart = outer[0];
+    const inner = tupleArgs(outer[1]); // [A, O]
+    const arrivee = inner[0];
+    const dir = inner[1];
     moves.push({ depart, arrivee, dir: String(dir) });
   }
   return moves;
