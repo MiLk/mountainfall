@@ -179,6 +179,18 @@
       transition: transform 0.1s;
     }
     #restart-btn:hover { transform: scale(1.05); }
+    #withdraw-btn {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    #withdraw-btn.hidden { display: none; }
+    #withdraw-btn:hover { background: #d63851; }
     @media (max-width: 480px) {
       .reserve-piece { width: 36px; height: 36px; font-size: 1.1rem; }
       #board { width: 75vw; height: 75vw; }
@@ -369,6 +381,7 @@ init_jeu :- plateauDepart(P), retractall(etat_courant(_)), assertz(etat_courant(
     <div id="reserve-right" class="reserve"></div>
   </div>
   <div id="action-hint">Loading Prolog engine...</div>
+  <button id="withdraw-btn" class="hidden">&#x274C; Withdraw piece</button>
   <div id="direction-picker" class="hidden">
     <button data-dir="N" class="dir-btn">&#9650;</button>
     <button data-dir="W" class="dir-btn">&#9664;</button>
@@ -554,8 +567,224 @@ function renderReserve(
   }
 }
 
-function onCellClick(cellNum) { /* Task 5 */ }
-function onReserveClick() { /* Task 5 */ }
+let selectedDepart = null;
+let currentMoves = [];
+let pendingArrivee = null;
+
+function onReserveClick() {
+  selectedDepart = 0;
+  currentMoves = parseMoveList(getMovesForPiece(0));
+  highlightMoves();
+  document.getElementById('action-hint').textContent =
+    'Click a highlighted cell to place your piece';
+}
+
+function onCellClick(cellNum) {
+  const picker = document.getElementById('direction-picker');
+  if (!picker.classList.contains('hidden')) return;
+
+  if (selectedDepart === null) {
+    const state = getState();
+    const player = String(state.J);
+    const elephants = parsePieceList(state.E);
+    const rhinos = parsePieceList(state.R);
+    const isOwn =
+      (player === 'E'
+        && elephants.some(p => p.cell === cellNum))
+      || (player === 'R'
+        && rhinos.some(p => p.cell === cellNum));
+    if (!isOwn) return;
+
+    selectedDepart = cellNum;
+    currentMoves = parseMoveList(getMovesForPiece(cellNum));
+    highlightMoves();
+    document.getElementById('action-hint').textContent =
+      'Click a highlighted cell to move, or click the same cell to rotate';
+  } else {
+    const validDirs = currentMoves
+      .filter(m => m.arrivee === cellNum)
+      .map(m => m.dir);
+
+    if (cellNum === 0) return;
+
+    if (validDirs.length === 0) {
+      clearSelection();
+      return;
+    }
+
+    if (validDirs.length === 1) {
+      executeMove(selectedDepart, cellNum, validDirs[0]);
+    } else {
+      showDirectionPicker(cellNum, validDirs);
+    }
+  }
+}
+
+function highlightMoves() {
+  document.querySelectorAll('.cell').forEach(c => {
+    c.classList.remove('highlighted', 'selected');
+  });
+
+  if (selectedDepart > 0) {
+    const selCell = document.querySelector(
+      `.cell[data-cell="${selectedDepart}"]`
+    );
+    if (selCell) selCell.classList.add('selected');
+  }
+
+  const destinations = [
+    ...new Set(currentMoves.map(m => m.arrivee))
+  ];
+  for (const dest of destinations) {
+    if (dest === 0) continue;
+    const cell = document.querySelector(
+      `.cell[data-cell="${dest}"]`
+    );
+    if (cell) cell.classList.add('highlighted');
+  }
+
+  document.querySelectorAll('.reserve-piece').forEach(
+    p => p.classList.remove('selected')
+  );
+  if (selectedDepart === 0) {
+    const activeReserve = document.querySelector(
+      '.reserve-piece'
+    );
+    if (activeReserve) activeReserve.classList.add('selected');
+  }
+
+  const hasWithdraw = currentMoves.some(m => m.arrivee === 0);
+  const withdrawBtn = document.getElementById('withdraw-btn');
+  if (hasWithdraw) {
+    withdrawBtn.classList.remove('hidden');
+  } else {
+    withdrawBtn.classList.add('hidden');
+  }
+}
+
+function clearSelection() {
+  selectedDepart = null;
+  currentMoves = [];
+  document.querySelectorAll('.cell').forEach(c => {
+    c.classList.remove('highlighted', 'selected');
+  });
+  document.querySelectorAll('.reserve-piece').forEach(
+    p => p.classList.remove('selected')
+  );
+  document.getElementById('direction-picker').classList.add(
+    'hidden'
+  );
+  document.getElementById('withdraw-btn').classList.add(
+    'hidden'
+  );
+  document.getElementById('action-hint').textContent =
+    'Click a piece or reserve to start your turn';
+}
+
+function showDirectionPicker(arrivee, validDirs) {
+  pendingArrivee = arrivee;
+  const picker = document.getElementById('direction-picker');
+
+  const targetCell = document.querySelector(
+    `.cell[data-cell="${arrivee}"]`
+  );
+  const rect = targetCell.getBoundingClientRect();
+  const pickerW = 140;
+  const pickerH = 140;
+  let left = rect.left + rect.width / 2 - pickerW / 2;
+  let top = rect.top + rect.height / 2 - pickerH / 2;
+  left = Math.max(
+    4, Math.min(left, window.innerWidth - pickerW - 4)
+  );
+  top = Math.max(
+    4, Math.min(top, window.innerHeight - pickerH - 4)
+  );
+  picker.style.left = `${left}px`;
+  picker.style.top = `${top}px`;
+
+  picker.querySelectorAll('.dir-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+    if (validDirs.includes(dir)) {
+      btn.classList.remove('disabled');
+    } else {
+      btn.classList.add('disabled');
+    }
+  });
+
+  picker.classList.remove('hidden');
+  document.getElementById('action-hint').textContent =
+    'Pick a direction for your piece';
+}
+
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dir = btn.dataset.dir;
+    if (btn.classList.contains('disabled')) return;
+    document.getElementById('direction-picker').classList.add(
+      'hidden'
+    );
+    executeMove(selectedDepart, pendingArrivee, dir);
+  });
+});
+
+function executeMove(depart, arrivee, dir) {
+  const ok = applyMove(depart, arrivee, dir);
+  if (!ok) {
+    document.getElementById('action-hint').textContent =
+      'Invalid move — try again';
+    clearSelection();
+    return;
+  }
+
+  clearSelection();
+
+  if (isGameOver()) {
+    renderBoard();
+    const winner = getWinner();
+    const overlay = document.getElementById('victory-overlay');
+    const msg = document.getElementById('victory-message');
+    if (winner === 'E') {
+      msg.textContent = '\uD83D\uDC18 Elephants Win!';
+    } else if (winner === 'R') {
+      msg.textContent = '\uD83E\uDD8F Rhinoceros Win!';
+    } else {
+      msg.textContent = 'Game Over!';
+    }
+    overlay.classList.remove('hidden');
+  } else {
+    renderBoard();
+  }
+}
+
+document.getElementById('restart-btn').addEventListener(
+  'click', () => {
+    prolog.call('init_jeu');
+    prolog.call('retractall(winner(_))');
+    document.getElementById('victory-overlay').classList.add(
+      'hidden'
+    );
+    renderBoard();
+  }
+);
+
+document.getElementById('withdraw-btn').addEventListener(
+  'click', () => {
+    if (selectedDepart === null || selectedDepart === 0) return;
+    executeMove(selectedDepart, 0, 'N');
+  }
+);
+
+document.addEventListener('click', (e) => {
+  const picker = document.getElementById('direction-picker');
+  if (!picker.classList.contains('hidden')
+      && !picker.contains(e.target)) {
+    picker.classList.add('hidden');
+    pendingArrivee = null;
+    document.getElementById('action-hint').textContent =
+      'Click a highlighted cell to move';
+  }
+});
 
 document.getElementById('action-hint').textContent =
   'Loading Prolog engine...';
