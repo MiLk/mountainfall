@@ -420,8 +420,7 @@ let prolog;
 async function initProlog() {
   const swipl = await SWIPL({ arguments: ['-q'] });
   prolog = swipl.prolog;
-  const prologSource = document.getElementById('siam-prolog').textContent;
-  prolog.load_string(prologSource, 'siam');
+  await prolog.load_scripts();
   prolog.call('init_jeu');
 }
 
