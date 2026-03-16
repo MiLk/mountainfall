@@ -8,7 +8,7 @@ A browser-based implementation of the [SIAM](https://boardgamegeek.com/boardgame
 
 Open `index.html` in any modern browser. No server or build step required.
 
-The game logic runs in [SWI-Prolog](https://www.swi-prolog.org/) compiled to WebAssembly via [swipl-wasm](https://github.com/nicknisi/swipl-wasm). The WASM engine (~10MB) loads from a CDN on first visit and is cached by the browser.
+The game logic runs in [SWI-Prolog](https://www.swi-prolog.org/) compiled to WebAssembly via [swipl-wasm](https://github.com/SWI-Prolog/npm-swipl-wasm). The WASM engine (~10MB) loads from a CDN on first visit and is cached by the browser.
 
 ## Rules
 
