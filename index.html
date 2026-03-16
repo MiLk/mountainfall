@@ -34,6 +34,25 @@
       align-items: center;
       min-height: 100vh;
     }
+    #intro { margin-bottom: 1rem; max-width: 480px; }
+    #intro h1 { font-size: 2rem; margin: 0; letter-spacing: 0.1em; }
+    .intro-subtitle { color: #aaa; font-size: 1rem; margin: 0.2rem 0 0.6rem; }
+    .intro-desc { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin: 0; }
+    #rules-details { margin-top: 0.6rem; }
+    #rules-details summary {
+      cursor: pointer; color: #4ecca3; font-size: 0.9rem;
+      user-select: none;
+    }
+    #rules-details summary:hover { text-decoration: underline; }
+    .rules-content {
+      margin-top: 0.5rem; text-align: left; color: #ccc;
+      font-size: 0.85rem; line-height: 1.6;
+    }
+    .rules-content ul {
+      padding-left: 1.2rem; margin: 0.3rem 0;
+    }
+    .rules-content li { margin-bottom: 0.2rem; }
+    .rules-content p { margin: 0.4rem 0; }
     #app {
       display: flex;
       flex-direction: column;
@@ -393,6 +412,25 @@ init_jeu :- plateauDepart(P), retractall(etat_courant(_)), assertz(etat_courant(
 </script>
 
 <div id="app">
+  <div id="intro">
+    <h1>SIAM</h1>
+    <p class="intro-subtitle">Elephants vs Rhinoceros</p>
+    <p class="intro-desc">Two players take turns placing and moving their animals on a 5&times;5 board. Three mountains sit in the center. Your goal: <strong>push a mountain off the board</strong>.</p>
+    <details id="rules-details">
+      <summary>Rules</summary>
+      <div class="rules-content">
+        <p><strong>On your turn, do one of:</strong></p>
+        <ul>
+          <li><strong>Enter</strong> &mdash; Place a reserve piece on any edge cell, choosing which direction it faces.</li>
+          <li><strong>Move</strong> &mdash; Move a piece one cell (up/down/left/right) and set its direction.</li>
+          <li><strong>Rotate</strong> &mdash; Change a piece's facing direction without moving it.</li>
+          <li><strong>Withdraw</strong> &mdash; Remove your piece from an edge cell back to reserve.</li>
+        </ul>
+        <p><strong>Pushing:</strong> A piece can push a line of pieces/mountains in its facing direction if its side has more force. Each aligned piece behind adds +1 force; each opposing piece subtracts. Mountains add resistance but no force.</p>
+        <p><strong>Winning:</strong> The player who pushes a mountain off any edge of the board wins &mdash; even if the push was helped by the opponent!</p>
+      </div>
+    </details>
+  </div>
   <div id="turn-indicator"></div>
   <div id="game-area">
     <div id="reserve-left" class="reserve"></div>
