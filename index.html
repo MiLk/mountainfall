@@ -5,6 +5,184 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SIAM</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+    }
+    #turn-indicator {
+      padding: 8px 24px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    #turn-indicator.elephant { background: #e94560; }
+    #turn-indicator.rhino { background: #533483; }
+    #game-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      width: min(70vw, 350px);
+      height: min(70vw, 350px);
+      border: 3px solid #0f3460;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .cell {
+      background: #16213e;
+      border: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .cell:hover { background: #1a2744; }
+    .cell.highlighted {
+      border-color: #4ecca3;
+      box-shadow: inset 0 0 8px rgba(78, 204, 163, 0.4);
+    }
+    .cell.selected { border-color: white; }
+    .dir-arrow {
+      position: absolute;
+      font-size: 0.5em;
+      line-height: 1;
+      opacity: 0.8;
+    }
+    .dir-arrow.N { top: 2px; left: 50%; transform: translateX(-50%); }
+    .dir-arrow.S { bottom: 2px; left: 50%; transform: translateX(-50%); }
+    .dir-arrow.W { left: 2px; top: 50%; transform: translateY(-50%); }
+    .dir-arrow.E { right: 2px; top: 50%; transform: translateY(-50%); }
+    .reserve {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .reserve-label {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      text-align: center;
+    }
+    .reserve-piece {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 2px solid;
+      font-size: 1.4rem;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s;
+    }
+    .reserve-piece:hover { transform: scale(1.1); }
+    .reserve-piece.elephant { border-color: #e94560; background: #2a1525; }
+    .reserve-piece.rhino { border-color: #533483; background: #1a1530; }
+    #action-hint {
+      font-size: 0.9rem;
+      opacity: 0.7;
+      text-align: center;
+      min-height: 1.4em;
+    }
+    #direction-picker {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: grid;
+      grid-template-areas:
+        ". n ."
+        "w . e"
+        ". s .";
+      grid-template-columns: 44px 44px 44px;
+      grid-template-rows: 44px 44px 44px;
+      gap: 4px;
+      z-index: 100;
+      background: #0f3460;
+      padding: 8px;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+    }
+    .dir-btn {
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 8px;
+      background: #16213e;
+      color: #eee;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s;
+    }
+    .dir-btn:hover { background: #1a2744; }
+    .dir-btn[data-dir="N"] { grid-area: n; }
+    .dir-btn[data-dir="S"] { grid-area: s; }
+    .dir-btn[data-dir="W"] { grid-area: w; }
+    .dir-btn[data-dir="E"] { grid-area: e; }
+    .dir-btn.disabled {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    #direction-picker.hidden { display: none; }
+    #victory-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000000cc;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+    #victory-overlay.hidden { display: none; }
+    #victory-message {
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+    }
+    #restart-btn {
+      background: #4ecca3;
+      color: #1a1a2e;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #restart-btn:hover { transform: scale(1.05); }
+    @media (max-width: 480px) {
+      .reserve-piece { width: 36px; height: 36px; font-size: 1.1rem; }
+      #board { width: 75vw; height: 75vw; }
+    }
   </style>
 </head>
 <body>
@@ -184,7 +362,23 @@ init_jeu :- plateauDepart(P), retractall(etat_courant(_)), assertz(etat_courant(
 </script>
 
 <div id="app">
-  <div id="action-hint">Loading...</div>
+  <div id="turn-indicator"></div>
+  <div id="game-area">
+    <div id="reserve-left" class="reserve"></div>
+    <div id="board"></div>
+    <div id="reserve-right" class="reserve"></div>
+  </div>
+  <div id="action-hint">Loading Prolog engine...</div>
+  <div id="direction-picker" class="hidden">
+    <button data-dir="N" class="dir-btn">&#9650;</button>
+    <button data-dir="W" class="dir-btn">&#9664;</button>
+    <button data-dir="E" class="dir-btn">&#9654;</button>
+    <button data-dir="S" class="dir-btn">&#9660;</button>
+  </div>
+  <div id="victory-overlay" class="hidden">
+    <div id="victory-message"></div>
+    <button id="restart-btn">New Game</button>
+  </div>
 </div>
 
 <script type="module">
@@ -278,16 +472,98 @@ function countReserve(pieceList) {
   return count;
 }
 
-document.getElementById('action-hint').textContent = 'Loading Prolog engine...';
-initProlog().then(() => {
+const ROWS = [5, 4, 3, 2, 1];
+const COLS = [1, 2, 3, 4, 5];
+const DIR_ARROWS = { N: '\u25B2', S: '\u25BC', W: '\u25C0', E: '\u25B6' };
+
+function renderBoard() {
   const state = getState();
-  console.log('Current player:', String(state.J));
-  console.log('First elephant term:', JSON.stringify(state.E[0]));
-  console.log('Mountains:', state.M);
-  document.getElementById('action-hint').textContent = 'Prolog loaded! Player: ' + String(state.J);
+  if (!state) return;
+
+  const player = String(state.J);
+  const elephants = parsePieceList(state.E);
+  const rhinos = parsePieceList(state.R);
+  const mountains = parseMountainList(state.M);
+  const elReserve = countReserve(state.E);
+  const rhReserve = countReserve(state.R);
+
+  const turnEl = document.getElementById('turn-indicator');
+  turnEl.className = player === 'E' ? 'elephant' : 'rhino';
+  turnEl.textContent = player === 'E'
+    ? '\uD83D\uDC18 Elephant\'s Turn'
+    : '\uD83E\uDD8F Rhinoceros\' Turn';
+
+  renderReserve(
+    'reserve-left', '\uD83D\uDC18', elReserve, 'elephant', player === 'E'
+  );
+  renderReserve(
+    'reserve-right', '\uD83E\uDD8F', rhReserve, 'rhino', player === 'R'
+  );
+
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for (const row of ROWS) {
+    for (const col of COLS) {
+      const cellNum = row * 10 + col;
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.cell = cellNum;
+
+      const el = elephants.find(p => p.cell === cellNum);
+      const rh = rhinos.find(p => p.cell === cellNum);
+      const isMtn = mountains.includes(cellNum);
+
+      if (el) {
+        cell.innerHTML =
+          '\uD83D\uDC18<span class="dir-arrow ' + el.dir + '">'
+          + DIR_ARROWS[el.dir] + '</span>';
+      } else if (rh) {
+        cell.innerHTML =
+          '\uD83E\uDD8F<span class="dir-arrow ' + rh.dir + '">'
+          + DIR_ARROWS[rh.dir] + '</span>';
+      } else if (isMtn) {
+        cell.textContent = '\u26F0\uFE0F';
+      }
+
+      cell.addEventListener('click', () => onCellClick(cellNum));
+      boardEl.appendChild(cell);
+    }
+  }
+
+  document.getElementById('action-hint').textContent =
+    'Click a piece or reserve to start your turn';
+}
+
+function renderReserve(
+  containerId, emoji, count, colorClass, isActive
+) {
+  const container = document.getElementById(containerId);
+  container.innerHTML =
+    '<div class="reserve-label">' + emoji + ' Reserve</div>';
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'reserve-piece ' + colorClass;
+    piece.textContent = emoji;
+    if (isActive) {
+      piece.addEventListener('click', () => onReserveClick());
+    } else {
+      piece.style.opacity = '0.4';
+      piece.style.cursor = 'default';
+    }
+    container.appendChild(piece);
+  }
+}
+
+function onCellClick(cellNum) { /* Task 5 */ }
+function onReserveClick() { /* Task 5 */ }
+
+document.getElementById('action-hint').textContent =
+  'Loading Prolog engine...';
+initProlog().then(() => {
+  renderBoard();
 }).catch(err => {
-  document.getElementById('action-hint').textContent = 'Error: ' + err.message;
-  console.error(err);
+  document.getElementById('action-hint').textContent =
+    'Error loading Prolog: ' + err.message;
 });
 </script>
 
