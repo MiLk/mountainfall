@@ -730,6 +730,7 @@ function showDirectionPicker(arrivee, validDirs) {
   });
 
   picker.classList.remove('hidden');
+  pickerJustOpened = true;
   document.getElementById('action-hint').textContent =
     'Pick a direction for your piece';
 }
@@ -793,7 +794,9 @@ document.getElementById('withdraw-btn').addEventListener(
   }
 );
 
+let pickerJustOpened = false;
 document.addEventListener('click', (e) => {
+  if (pickerJustOpened) { pickerJustOpened = false; return; }
   const picker = document.getElementById('direction-picker');
   if (!picker.classList.contains('hidden')
       && !picker.contains(e.target)) {
