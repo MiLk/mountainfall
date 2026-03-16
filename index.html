@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIAM</title>
+  <style>
+  </style>
+</head>
+<body>
+
+<script type="text/prolog" id="siam-prolog">
+:- use_module(library(apply)).
+:- dynamic winner/1, etat_courant/1.
+
+get([T|_],I,X) :- I = 1, !, X = T.
+get([_|Q],I,X) :- J is I - 1, get(Q,J,X).
+
+element(X,L):- member(X,L).
+
+sed([Prev|L],Prev,New,[New|L]) :- !.
+sed([X|L],Prev,New,[X|NewL]) :- sed(L,Prev,New,NewL).
+
+plateauDepart(Plateau) :- Plateau = [[(0,0),(0,0),(0,0),(0,0),(0,0)],[(0,0),(0,0),(0,0),(0,0),(0,0)], [32,33,34],'E'].
+
+isElephant([E,_,_,_],Case) :- element((Case,_),E), Case > 0.
+isRhinoceros([_,R,_,_],Case) :- element((Case,_),R), Case > 0.
+isMontagne([_,_,M,_],Case) :- element(Case,M), Case > 0.
+tourJoueur([_,_,_,J],J).
+dispoElephant([E,_,_,_]):- element((0,_),E), !.
+dispoRhinoceros([_,R,_,_]):- element((0,_),R), !.
+
+case_occupee(Plateau,Case,X):- isElephant(Plateau,Case), !, X = 'E'.
+case_occupee(Plateau,Case,X):- isRhinoceros(Plateau,Case), !, X = 'R'.
+case_occupee(Plateau,Case,X):- isMontagne(Plateau,Case), !, X = 'M'.
+
+direction_case(_,0,_):- !.
+direction_case([E,_,_,_],Case,Direction) :- element((Case,Direction),E), !.
+direction_case([_,R,_,_],Case,Direction) :- element((Case,Direction),R), !.
+
+borneCase(Case,CaseB):- Case > 55, !, CaseB = 0.
+borneCase(Case,CaseB):- Case < 11, !, CaseB = 0.
+borneCase(Case,CaseB):- Tmp is Case mod 10, Tmp = 0, !, CaseB = 0.
+borneCase(Case,CaseB):- Tmp is Case mod 10, Tmp > 5, !, CaseB = 0.
+borneCase(Case,Case).
+
+caseSuiv(0,_,Case):- element(Case, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]).
+caseSuiv(Case,Dir,CaseSuivB):- Dir = 'W', element(Case, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]), CaseSuiv is Case - 1, borneCase(CaseSuiv,CaseSuivB).
+caseSuiv(Case,Dir,CaseSuivB):- Dir = 'E', element(Case, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]), CaseSuiv is Case + 1, borneCase(CaseSuiv,CaseSuivB).
+caseSuiv(Case,Dir,CaseSuivB):- Dir = 'S', element(Case, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]), CaseSuiv is Case - 10, borneCase(CaseSuiv,CaseSuivB).
+caseSuiv(Case,Dir,CaseSuivB):- Dir = 'N', element(Case, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]), CaseSuiv is Case + 10, borneCase(CaseSuiv,CaseSuivB).
+
+dirOp('E','W').
+dirOp('W','E').
+dirOp('N','S').
+dirOp('S','N').
+
+comptageForceMasse(Plateau,Case,_,Force,Masse,Force,NewMasse):- isMontagne(Plateau,Case), !, NewMasse is Masse + 1.
+comptageForceMasse(Plateau,Case,Dir,Force,Masse,NewForce,Masse):- direction_case(Plateau,Case,O), Dir = O, !, NewForce is Force + 1.
+comptageForceMasse(Plateau,Case,Dir,Force,Masse,NewForce,Masse):- direction_case(Plateau,Case,O), dirOp(Dir,O), !, NewForce is Force - 1.
+comptageForceMasse(_,_,_,Force,Masse,Force,Masse).
+
+plusFort(Force,Masse):- Force > 0, Force >= Masse.
+
+comptage(Plateau, Case, _Dir, _Force, _Masse):- \+case_occupee(Plateau,Case,_), !.
+comptage(Plateau, Case, Dir, Force, Masse):- comptageForceMasse(Plateau,Case, Dir, Force,Masse,NewForce,NewMasse),
+                                             plusFort(NewForce,NewMasse), !, caseSuiv(Case,Dir,CaseSuiv), comptage(Plateau, CaseSuiv, Dir, NewForce, NewMasse).
+
+poussee_possible(Plateau,(Depart,Arrivee,O)) :- direction_case(Plateau,Depart,O), caseSuiv(Depart,O,Arrivee),
+                                                comptage(Plateau,Arrivee,O,1,0).
+
+verifDir(O):- element(O,['N','S','E','W']).
+verifCoupEntree((_,Arrivee,O)):- verifDir(O), element(Arrivee, [11,12,13,14,15,21,25,31,35,41,45,51,52,53,54,55]).
+verifCoup((Depart,Arrivee,O)):- element(Depart, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]), element(Arrivee, [11,12,13,14,15,21,22,23,24,25,31,32,33,34,35,41,42,43,44,45,51,52,53,54,55]), verifDir(O).
+
+verifEntree(Plateau, 0):- tourJoueur(Plateau,J), J = 'E', dispoElephant(Plateau), !.
+verifEntree(Plateau, 0):- tourJoueur(Plateau,J), J = 'R', dispoRhinoceros(Plateau), !.
+
+verifOrientationPousseeEntree(Depart,_,_):- Depart \= 0, !.
+verifOrientationPousseeEntree(0,Arrivee,'N'):- element(Arrivee, [11,12,13,14,15]).
+verifOrientationPousseeEntree(0,Arrivee,'S'):- element(Arrivee, [51,52,53,54,55]).
+verifOrientationPousseeEntree(0,Arrivee,'E'):- element(Arrivee, [51,41,31,21,11]).
+verifOrientationPousseeEntree(0,Arrivee,'W'):- element(Arrivee, [15,25,35,45,55]).
+
+verifCase(Plateau, (_,Arrivee,_)):- \+case_occupee(Plateau,Arrivee,_), !.
+verifCase(Plateau, (Depart,Arrivee,O)):- verifOrientationPousseeEntree(Depart,Arrivee,O), poussee_possible(Plateau,(Depart,Arrivee,O)), !.
+
+caseAdjacente(Depart,Arrivee):- Diff is Depart - Arrivee, element(Diff,[-1,1,-10,10]), !.
+
+memeSens([E,_,_,'E'],Case,O) :- element((Case,O),E).
+memeSens([_,R,_,'R'],Case,O) :- element((Case,O),R).
+
+coup_possible(Plateau, (Depart,Arrivee,O)):- Depart = 0, verifCoupEntree((Depart,Arrivee,O)), verifEntree(Plateau, Depart), verifCase(Plateau, (Depart,Arrivee,O)).
+coup_possible(Plateau, (Depart,Arrivee,O)):- verifCoup((Depart,Arrivee,O)), Depart \= 0,
+                                             caseAdjacente(Depart,Arrivee),
+                                             case_occupee(Plateau,Depart,J),
+                                             tourJoueur(Plateau,J),
+                                             verifCase(Plateau,(Depart,Arrivee,O)).
+coup_possible(Plateau, (X,X,O)):- verifCoup((X,X,O)), tourJoueur(Plateau,J), \+memeSens(Plateau,X,O), case_occupee(Plateau,X,J).
+coup_possible(Plateau, (Depart,0,_)):- element(Depart, [11,12,13,14,15,21,25,31,35,41,45,51,52,53,54,55]), tourJoueur(Plateau,J), case_occupee(Plateau,Depart,J).
+
+gain(0, J) :- retractall(winner(_)), assertz(winner(J)).
+gain(_, _).
+
+pousseur(L,J,Case,O,_,J):- element((Case,O),L), !.
+pousseur(_,_,_,_,B,B).
+
+bouger(_,_,[E,R,M,_],(X,X,_), E,R,M):- !.
+bouger('E',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isElephant([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          pousseur(E,'E',Depart,O,B,NewB),
+                                                          bouger('E',NewB,[E,R,M,_],(Arrivee,CaseSuiv,O),EInt,NewR,NewM),
+                                                          direction_case([E,R,_,_],Depart,OF),
+                                                          sed(EInt,(Depart,_),(Arrivee,OF),NewE).
+bouger('E',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isRhinoceros([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          pousseur(E,'E',Depart,O,B,NewB),
+                                                          bouger('R',NewB,[E,R,M,_],(Arrivee,CaseSuiv,O),EInt,NewR,NewM),
+                                                          direction_case([E,R,_,_],Depart,OF),
+                                                          sed(EInt,(Depart,_),(Arrivee,OF),NewE).
+bouger('E',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isMontagne([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          pousseur(E,'E',Depart,O,B,NewB),
+                                                          bouger('M',NewB,[E,R,M,_],(Arrivee,CaseSuiv,O),EInt,NewR,NewM),
+                                                          direction_case([E,R,_,_],Depart,OF),
+                                                          sed(EInt,(Depart,_),(Arrivee,OF),NewE).
+bouger('E',_,[E,R,M,_],(Depart,Arrivee,_),NewE,R,M):- direction_case([E,R,_,_],Depart,OF), sed(E,(Depart,_),(Arrivee,OF),NewE).
+
+bouger('R',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isElephant([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          pousseur(R,'R',Depart,O,B,NewB),
+                                                          bouger('E',NewB,[E,R,M,_],(Arrivee,CaseSuiv,O),NewE,RInt,NewM),
+                                                          direction_case([E,R,_,_],Depart,OF),
+                                                          sed(RInt,(Depart,_),(Arrivee,OF),NewR).
+bouger('R',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isRhinoceros([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          pousseur(R,'R',Depart,O,B,NewB),
+                                                          bouger('R',NewB,[E,R,M,_],(Arrivee,CaseSuiv,O),NewE,RInt,NewM),
+                                                          direction_case([E,R,_,_],Depart,OF),
+                                                          sed(RInt,(Depart,_),(Arrivee,OF),NewR).
+bouger('R',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isMontagne([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          pousseur(R,'R',Depart,O,B,NewB),
+                                                          bouger('M',NewB,[E,R,M,_],(Arrivee,CaseSuiv,O),NewE,RInt,NewM),
+                                                          direction_case([E,R,_,_],Depart,OF),
+                                                          sed(RInt,(Depart,_),(Arrivee,OF),NewR).
+bouger('R',_,[E,R,M,_],(Depart,Arrivee,_),E,NewR,M):- direction_case([E,R,_,_],Depart,OF), sed(R,(Depart,_),(Arrivee,OF),NewR).
+
+bouger('M',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isElephant([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          bouger('E',B,[E,R,M,_],(Arrivee,CaseSuiv,O),NewE,NewR,MInt),
+                                                          sed(MInt,Depart,Arrivee,NewM).
+bouger('M',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isRhinoceros([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          bouger('R',B,[E,R,M,_],(Arrivee,CaseSuiv,O),NewE,NewR,MInt),
+                                                          sed(MInt,Depart,Arrivee,NewM).
+bouger('M',B,[E,R,M,_],(Depart,Arrivee,O),NewE,NewR,NewM):- isMontagne([E,R,M,_],Arrivee), !, caseSuiv(Arrivee,O,CaseSuiv),
+                                                          bouger('M',B,[E,R,M,_],(Arrivee,CaseSuiv,O),NewE,NewR,MInt),
+                                                          sed(MInt,Depart,Arrivee,NewM).
+bouger('M',B,[E,R,M,_],(Depart,Arrivee,_), E,R,NewM):- sed(M,Depart,Arrivee,NewM), gain(Arrivee,B).
+
+orienter(L,(_,Arrivee,O),NewL):- sed(L,(Arrivee,_),(Arrivee,O),NewL).
+
+majPlateau([E,R,M,'E'],Coup,[NewE,NewR,NewM,'R']):- bouger('E','E',[E,R,M,_],Coup,IntE,NewR,NewM), orienter(IntE,Coup,NewE).
+majPlateau([E,R,M,'R'],Coup,[NewE,NewR,NewM,'E']):- bouger('R','R',[E,R,M,_],Coup,NewE,IntR,NewM), orienter(IntR,Coup,NewR).
+
+etat_plateau([E, R, M, J], E, R, M, J).
+
+liste_coups(Plateau, Coups) :-
+    (setof(C, coup_possible(Plateau, C), Coups) -> true ; Coups = []).
+
+coups_piece(Plateau, Depart, Coups) :-
+    liste_coups(Plateau, Tous),
+    include(coup_depart(Depart), Tous, Coups).
+coup_depart(D, (D, _, _)).
+
+appliquer_coup(Plateau, Coup, NouveauPlateau) :-
+    coup_possible(Plateau, Coup),
+    majPlateau(Plateau, Coup, NouveauPlateau).
+
+partie_finie([_, _, M, _]) :- member(0, M).
+
+reserve_count([E, _, _, _], 'E', N) :-
+    include(is_reserve, E, Res), length(Res, N).
+reserve_count([_, R, _, _], 'R', N) :-
+    include(is_reserve, R, Res), length(Res, N).
+is_reserve((0, _)).
+
+gagnant(Joueur) :- winner(Joueur).
+
+init_jeu :- plateauDepart(P), retractall(etat_courant(_)), assertz(etat_courant(P)).
+</script>
+
+<div id="app">
+  <div id="action-hint">Loading...</div>
+</div>
+
+<script type="module">
+import SWIPL from 'https://SWI-Prolog.github.io/npm-swipl-wasm/latest/index.js';
+
+let prolog;
+
+async function initProlog() {
+  const swipl = await SWIPL({ arguments: ['-q'] });
+  prolog = swipl.prolog;
+  const prologSource = document.getElementById('siam-prolog').textContent;
+  await prolog.load_string(prologSource, 'siam');
+  prolog.call('init_jeu');
+}
+
+function queryOnce(queryStr) {
+  const q = prolog.query(queryStr);
+  const result = q.once();
+  q.close();
+  if (!result || result.success === false) return null;
+  return result;
+}
+
+function getState() {
+  return queryOnce('etat_courant(P), etat_plateau(P, E, R, M, J).');
+}
+
+function getMovesForPiece(depart) {
+  const result = queryOnce(`etat_courant(P), coups_piece(P, ${depart}, C).`);
+  return result ? result.C : [];
+}
+
+function applyMove(depart, arrivee, dir) {
+  return !!queryOnce(
+    `etat_courant(P), appliquer_coup(P, (${depart},${arrivee},'${dir}'), New), retract(etat_courant(P)), assertz(etat_courant(New)).`
+  );
+}
+
+function isGameOver() {
+  return !!queryOnce('etat_courant(P), partie_finie(P).');
+}
+
+function getWinner() {
+  const result = queryOnce('gagnant(J).');
+  return result ? String(result.J) : null;
+}
+
+function tupleArgs(term) {
+  return term[','];
+}
+
+function parsePieceList(prologList) {
+  const pieces = [];
+  if (!prologList) return pieces;
+  for (const item of prologList) {
+    const args = tupleArgs(item);
+    const caseNum = args[0];
+    const dir = args[1];
+    if (caseNum !== 0) {
+      pieces.push({ cell: caseNum, dir: String(dir) });
+    }
+  }
+  return pieces;
+}
+
+function parseMountainList(prologList) {
+  if (!prologList) return [];
+  return prologList.filter(m => m !== 0);
+}
+
+function parseMoveList(prologList) {
+  const moves = [];
+  if (!prologList) return moves;
+  for (const item of prologList) {
+    const outer = tupleArgs(item);
+    const inner = tupleArgs(outer[0]);
+    const depart = inner[0];
+    const arrivee = inner[1];
+    const dir = outer[1];
+    moves.push({ depart, arrivee, dir: String(dir) });
+  }
+  return moves;
+}
+
+function countReserve(pieceList) {
+  let count = 0;
+  if (!pieceList) return count;
+  for (const item of pieceList) {
+    if (tupleArgs(item)[0] === 0) count++;
+  }
+  return count;
+}
+
+document.getElementById('action-hint').textContent = 'Loading Prolog engine...';
+initProlog().then(() => {
+  const state = getState();
+  console.log('Current player:', String(state.J));
+  console.log('First elephant term:', JSON.stringify(state.E[0]));
+  console.log('Mountains:', state.M);
+  document.getElementById('action-hint').textContent = 'Prolog loaded! Player: ' + String(state.J);
+}).catch(err => {
+  document.getElementById('action-hint').textContent = 'Error: ' + err.message;
+  console.error(err);
+});
+</script>
+
+</body>
+</html>
