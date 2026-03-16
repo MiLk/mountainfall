@@ -413,16 +413,15 @@ init_jeu :- plateauDepart(P), retractall(etat_courant(_)), assertz(etat_courant(
   </div>
 </div>
 
-<script type="module">
-import SWIPL from 'https://SWI-Prolog.github.io/npm-swipl-wasm/latest/index.js';
-
+<script src="https://cdn.jsdelivr.net/npm/swipl-wasm@latest/dist/swipl/swipl-bundle.js"></script>
+<script>
 let prolog;
 
 async function initProlog() {
   const swipl = await SWIPL({ arguments: ['-q'] });
   prolog = swipl.prolog;
   const prologSource = document.getElementById('siam-prolog').textContent;
-  await prolog.load_string(prologSource, 'siam');
+  prolog.load_string(prologSource, 'siam');
   prolog.call('init_jeu');
 }
 
